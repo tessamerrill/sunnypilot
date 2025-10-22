@@ -25,6 +25,48 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/visuals_panel.h"
 
 TogglesPanelSP::TogglesPanelSP(SettingsWindowSP *parent) : TogglesPanel(parent) {
+  // Add sunnypilot specific toggles
+  std::vector<std::tuple<QString, QString, QString, QString, bool>> sp_toggle_defs{
+    {
+      "WardrivingMode",
+      tr("Wardriving Mode"),
+      tr("Enable wardriving mode to scan and log Wi-Fi networks along with GPS coordinates to a KML file compatible with WiGLE."),
+      "../assets/icons/network.png",
+      false,
+    },
+  };
+
+  for (auto &[param, title, desc, icon, needs_restart] : sp_toggle_defs) {
+    auto toggle = new ParamControl(param, title, desc, icon, this);
+
+    bool locked = params.getBool((param + "Lock").toStdString());
+    toggle->setEnabled(!locked);
+
+    if (needs_restart && !locked) {
+      toggle->setDescription(toggle->getDescription() + tr(" Changing this setting will restart openpilot if the car is powered on."));
+
+      QObject::connect(uiState(), &UIState::engagedChanged, [toggle](bool engaged) {
+        toggle->setEnabled(!engaged);
+      });
+
+      QObject::connect(toggle, &ParamControl::toggleFlipped, [=](bool state) {
+        params.putBool("OnroadCycleRequested", true);
+      });
+    }
+
+    addItem(toggle);
+    toggles[param.toStdString()] = toggle;
+  }
+
+  // Add wardriving scan interval control
+  std::vector<QString> scan_interval_texts{tr("10s"), tr("20s"), tr("30s"), tr("60s")};
+  wardriving_scan_interval = new ButtonParamControl("WardrivingScanInterval", tr("Wardriving Scan Interval"),
+                                                    tr("Set the interval between Wi-Fi network scans in wardriving mode."),
+                                                    "../assets/icons/network.png",
+                                                    scan_interval_texts);
+
+  addItem(wardriving_scan_interval);
+
   QObject::connect(uiStateSP(), &UIStateSP::uiUpdate, this, &TogglesPanelSP::updateState);
 }
 

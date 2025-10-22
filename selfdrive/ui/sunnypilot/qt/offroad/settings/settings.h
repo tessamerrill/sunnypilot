@@ -40,4 +40,7 @@ public:
 
 private slots:
   void updateState(const UIStateSP &s);
+
+private:
+  ButtonParamControl *wardriving_scan_interval;
 };

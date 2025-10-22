@@ -95,9 +95,8 @@ def is_stock_model(started, params, CP: car.CarParams) -> bool:
 def mapd_ready(started: bool, params: Params, CP: car.CarParams) -> bool:
   return bool(os.path.exists(Paths.mapd_root()))
 
-def uploader_ready(started: bool, params: Params, CP: car.CarParams) -> bool:
-  if not params.get_bool("OnroadUploads"):
-    return only_offroad(started, params, CP)
+def wardriving_enabled(started: bool, params: Params, CP: car.CarParams) -> bool:
+  return started and params.get_bool("WardrivingMode")
 
   return always_run(started, params, CP)
 
@@ -182,6 +181,9 @@ procs += [
 
   # locationd
   NativeProcess("locationd_llk", "sunnypilot/selfdrive/locationd", ["./locationd"], only_onroad),
+
+  # wardriving
+  PythonProcess("wardriving", "sunnypilot.system.wardriving.wardriving", wardriving_enabled),
 ]
 
 if os.path.exists("./github_runner.sh"):
